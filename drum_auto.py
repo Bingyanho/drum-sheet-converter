@@ -87,7 +87,7 @@ def is_url(source):
     return parsed.scheme in {"http", "https"}
 
 
-def download_youtube(source, download_dir):
+def download_youtube(source, download_dir, cookies_from_browser=None):
     try:
         from yt_dlp import YoutubeDL
     except ImportError as exc:
@@ -119,17 +119,31 @@ def download_youtube(source, download_dir):
         "restrictfilenames": True,
         "progress_hooks": [progress_hook],
     }
+    if cookies_from_browser:
+        options["cookiesfrombrowser"] = (cookies_from_browser, None, None, None)
+        print(f"Using cookies from browser: {cookies_from_browser}")
+
     with YoutubeDL(options) as ydl:
-        info = ydl.extract_info(source, download=True)
+        try:
+            info = ydl.extract_info(source, download=True)
+        except Exception as exc:
+            text = str(exc)
+            if "Sign in to confirm" in text or "not a bot" in text:
+                raise RuntimeError(
+                    "YouTube blocked this download and asked for browser login cookies. "
+                    "In the GUI, enable 'Use browser cookies for YouTube' and choose the browser "
+                    "where you are logged into YouTube, then try again."
+                ) from exc
+            raise
         filename = ydl.prepare_filename(info)
         mp4_path = Path(filename).with_suffix(".mp4")
         return mp4_path if mp4_path.exists() else Path(filename)
 
 
-def resolve_source(source, work_dir):
+def resolve_source(source, work_dir, cookies_from_browser=None):
     if is_url(source):
         print("Detected YouTube/web URL. Downloading video...")
-        return download_youtube(source, work_dir / "downloads")
+        return download_youtube(source, work_dir / "downloads", cookies_from_browser)
 
     path = Path(source).expanduser()
     if not path.exists():
@@ -989,6 +1003,11 @@ def build_parser():
     parser.add_argument("--report-json", action="store_true", help="Write processing statistics to report.json.")
     parser.add_argument("--delete-temp", action="store_true", help="Delete temporary captured row images after output.")
     parser.add_argument(
+        "--cookies-from-browser",
+        choices=["chrome", "edge", "firefox", "brave", "opera", "vivaldi", "safari"],
+        help="Use browser cookies for YouTube downloads that require sign-in.",
+    )
+    parser.add_argument(
         "--keep-downloaded-video",
         action="store_true",
         help="Keep YouTube/web video files after successful conversion. By default downloaded videos are deleted.",
@@ -1003,7 +1022,7 @@ def main():
     else:
         work_dir = Path(__file__).resolve().parent
     source_is_url = is_url(args.source)
-    video_path = resolve_source(args.source, work_dir)
+    video_path = resolve_source(args.source, work_dir, args.cookies_from_browser)
     opencv_video_path, temp_video_path = prepare_video_for_opencv(video_path)
     base_name = safe_name(args.name or video_path.stem)
     output_dir = make_unique_dir(work_dir / "sheet" / f"{base_name}")
