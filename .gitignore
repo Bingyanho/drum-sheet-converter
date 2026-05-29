@@ -6,6 +6,9 @@ downloads/
 sheet/
 pic/
 test_video.avi
+build/
+dist/
+*.spec
 
 # Local environment
 .venv/

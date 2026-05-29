@@ -122,24 +122,6 @@ scroll 模式如果捲動速度較快：
 python .\drum_auto.py .\video.mp4 --name song_name --mode scroll --interval 0.2 --scroll-max-shift 240 --scroll-min-shift 4 --scroll-min-score 22
 ```
 
-## 分享給其他人
-
-建議只分享以下檔案：
-
-- `drum_auto.py`
-- `drum_gui.py`
-- `requirements.txt`
-- `README.md`
-- `.gitignore`
-- `run_gui.bat`
-
-不要上傳或打包以下資料夾：
-
-- `downloads/`
-- `sheet/`
-- `pic/`
-- `__pycache__/`
-
 ## 打包成 exe
 
 如果要給不熟 Python 的使用者，可以用 PyInstaller 打包 GUI：
