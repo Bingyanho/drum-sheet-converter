@@ -333,7 +333,10 @@ class DrumAutoGUI:
         if not source:
             raise ValueError("Please choose a video file or paste a YouTube URL.")
 
-        command = [sys.executable, str(APP_DIR / "drum_auto.py"), source]
+        if getattr(sys, "frozen", False):
+            command = [sys.executable, "--cli", source]
+        else:
+            command = [sys.executable, str(APP_DIR / "drum_auto.py"), source]
         if self.name.get().strip():
             command.extend(["--name", self.name.get().strip()])
         command.extend(["--mode", self.conversion_mode.get()])
@@ -471,6 +474,13 @@ class DrumAutoGUI:
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "--cli":
+        from drum_auto import main as cli_main
+
+        sys.argv = [sys.argv[0], *sys.argv[2:]]
+        cli_main()
+        return
+
     root = Tk()
     DrumAutoGUI(root)
     root.mainloop()

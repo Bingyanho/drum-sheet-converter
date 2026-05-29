@@ -998,7 +998,10 @@ def build_parser():
 
 def main():
     args = build_parser().parse_args()
-    work_dir = Path(__file__).resolve().parent
+    if getattr(sys, "frozen", False):
+        work_dir = Path(sys.executable).resolve().parent
+    else:
+        work_dir = Path(__file__).resolve().parent
     source_is_url = is_url(args.source)
     video_path = resolve_source(args.source, work_dir)
     opencv_video_path, temp_video_path = prepare_video_for_opencv(video_path)
