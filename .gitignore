@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+
+# Generated media and outputs
+downloads/
+sheet/
+pic/
+test_video.avi
+
+# Local environment
+.venv/
+venv/
+env/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
