@@ -128,18 +128,3 @@ scroll 模式如果捲動速度較快：
 ```powershell
 python .\drum_auto.py .\video.mp4 --name song_name --mode scroll --interval 0.2 --scroll-max-shift 240 --scroll-min-shift 4 --scroll-min-score 22
 ```
-
-## 打包成 exe
-
-如果要給不熟 Python 的使用者，可以用 PyInstaller 打包 GUI：
-
-```powershell
-python -m pip install pyinstaller
-pyinstaller --onefile --windowed --name DrumSheetConverter drum_gui.py
-```
-
-打包完成後，執行檔會在：
-
-```text
-dist/
-```
