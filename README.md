@@ -86,10 +86,10 @@ python .\drum_auto.py "https://youtu.be/example" --name song_name --mode scroll
 - `--review`：輸出前逐張檢查擷取結果，僅適用 rows 模式。
 - `--report-json`：輸出處理統計資料。
 - `--delete-temp`：輸出後刪除中間截圖。
+
 rows 模式參數：
 
-- `--threshold`：畫面差異門檻。數值越低，越容易保留小變化。
-- `--duplicate-threshold`：重複畫面判斷門檻。數值越低，越不容易刪掉相似但有效的頁面。
+- `--threshold`：擷取門檻。數值越低，越容易保留小變化；數值越高，越容易略過相似畫面。
 
 scroll 模式參數：
 
@@ -108,7 +108,7 @@ python .\drum_auto.py .\video.mp4 --name song_name --mode rows --review
 rows 模式如果容易漏抓：
 
 ```powershell
-python .\drum_auto.py .\video.mp4 --name song_name --mode rows --interval 0.25 --threshold 1.0 --duplicate-threshold 1.0 --review
+python .\drum_auto.py .\video.mp4 --name song_name --mode rows --interval 0.25 --threshold 1.0 --review
 ```
 
 scroll 模式：

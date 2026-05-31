@@ -10,7 +10,6 @@ from tkinter import ttk
 from drum_auto import (
     DEFAULT_CONVERSION_MODE,
     DEFAULT_DELETE_DOWNLOADED_VIDEO,
-    DEFAULT_DUPLICATE_THRESHOLD,
     DEFAULT_INTERVAL,
     DEFAULT_SCROLL_INTERVAL,
     DEFAULT_SCROLL_MAX_SHIFT,
@@ -42,7 +41,6 @@ class DrumAutoGUI:
         self.rows_interval = DoubleVar(value=DEFAULT_INTERVAL)
         self.scroll_interval = DoubleVar(value=DEFAULT_SCROLL_INTERVAL)
         self.threshold = DoubleVar(value=DEFAULT_THRESHOLD)
-        self.duplicate_threshold = DoubleVar(value=DEFAULT_DUPLICATE_THRESHOLD)
         self.scroll_max_shift = DoubleVar(value=DEFAULT_SCROLL_MAX_SHIFT)
         self.scroll_min_shift = DoubleVar(value=DEFAULT_SCROLL_MIN_SHIFT)
         self.scroll_min_score = DoubleVar(value=DEFAULT_SCROLL_MIN_SCORE)
@@ -229,9 +227,8 @@ class DrumAutoGUI:
             reset_row = 5
         else:
             self.add_advanced_row(1, "Rows interval", self.rows_interval)
-            self.add_advanced_row(2, "Change threshold", self.threshold)
-            self.add_advanced_row(3, "Duplicate threshold", self.duplicate_threshold)
-            reset_row = 4
+            self.add_advanced_row(2, "Capture threshold", self.threshold)
+            reset_row = 3
 
         actions = ttk.Frame(self.advanced_box, style="Section.TFrame")
         actions.grid(row=reset_row, column=0, columnspan=2, sticky="ew", pady=(10, 0))
@@ -325,7 +322,6 @@ class DrumAutoGUI:
         self.rows_interval.set(DEFAULT_INTERVAL)
         self.scroll_interval.set(DEFAULT_SCROLL_INTERVAL)
         self.threshold.set(DEFAULT_THRESHOLD)
-        self.duplicate_threshold.set(DEFAULT_DUPLICATE_THRESHOLD)
         self.scroll_max_shift.set(DEFAULT_SCROLL_MAX_SHIFT)
         self.scroll_min_shift.set(DEFAULT_SCROLL_MIN_SHIFT)
         self.scroll_min_score.set(DEFAULT_SCROLL_MIN_SCORE)
@@ -349,8 +345,6 @@ class DrumAutoGUI:
                 str(self.scroll_interval.get() if self.conversion_mode.get() == "scroll" else self.rows_interval.get()),
                 "--threshold",
                 str(self.threshold.get()),
-                "--duplicate-threshold",
-                str(self.duplicate_threshold.get()),
                 "--scroll-max-shift",
                 str(int(self.scroll_max_shift.get())),
                 "--scroll-min-shift",

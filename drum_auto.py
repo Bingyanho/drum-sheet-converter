@@ -24,11 +24,11 @@ WHITE = (255, 255, 255)
 # Tunable defaults
 DEFAULT_INTERVAL = 1.5
 DEFAULT_THRESHOLD = 1.5
-DEFAULT_DUPLICATE_THRESHOLD = 1.5
 DEFAULT_ROI_MARGIN = 0.0
 DEFAULT_PREVIEW_WIDTH = 960
 DEFAULT_PREVIEW_HEIGHT = 540
 DEFAULT_MAX_FRAMES = 0
+DEFAULT_DOWNLOAD_MAX_HEIGHT = 1080
 DEFAULT_DELETE_DOWNLOADED_VIDEO = True
 DEFAULT_CONVERSION_MODE = "rows"
 DEFAULT_SCROLL_INTERVAL = 1.0
@@ -112,7 +112,13 @@ def download_youtube(source, download_dir):
             print("Download progress: 100%", flush=True)
 
     options = {
-        "format": "bv*[ext=mp4]/best[ext=mp4][vcodec!=none]/best",
+        "format": (
+            f"bv*[ext=mp4][height<={DEFAULT_DOWNLOAD_MAX_HEIGHT}]/"
+            f"bv*[height<={DEFAULT_DOWNLOAD_MAX_HEIGHT}]/"
+            f"best[ext=mp4][height<={DEFAULT_DOWNLOAD_MAX_HEIGHT}][vcodec!=none]/"
+            f"best[height<={DEFAULT_DOWNLOAD_MAX_HEIGHT}][vcodec!=none]/"
+            "bv*[ext=mp4]/best[ext=mp4][vcodec!=none]/best"
+        ),
         "outtmpl": str(download_dir / "%(id)s.%(ext)s"),
         "noplaylist": True,
         "quiet": False,
@@ -686,7 +692,7 @@ def final_filter_sheet_images(image_paths, duplicate_threshold):
         fingerprints.append(fingerprint)
 
     if not filtered:
-        raise RuntimeError("Final filter removed every image. Try lowering --duplicate-threshold.")
+        raise RuntimeError("Final filter removed every image. Try lowering --threshold.")
 
     stats = {
         "input_images": len(image_paths),
@@ -996,8 +1002,8 @@ def build_parser():
     parser.add_argument("--preview-width", type=int, default=DEFAULT_PREVIEW_WIDTH, help=f"Crop selector max width. Default: {DEFAULT_PREVIEW_WIDTH}")
     parser.add_argument("--preview-height", type=int, default=DEFAULT_PREVIEW_HEIGHT, help=f"Crop selector max height. Default: {DEFAULT_PREVIEW_HEIGHT}")
     parser.add_argument("--interval", type=float, default=DEFAULT_INTERVAL, help=f"Scan interval in seconds. Default: {DEFAULT_INTERVAL}")
-    parser.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD, help=f"Frame difference threshold. Default: {DEFAULT_THRESHOLD}")
-    parser.add_argument("--duplicate-threshold", type=float, default=DEFAULT_DUPLICATE_THRESHOLD, help=f"Duplicate content threshold. Default: {DEFAULT_DUPLICATE_THRESHOLD}")
+    parser.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD, help=f"Capture threshold. Lower values keep smaller changes. Default: {DEFAULT_THRESHOLD}")
+    parser.add_argument("--duplicate-threshold", type=float, help=argparse.SUPPRESS)
     parser.add_argument("--scroll-max-shift", type=int, default=DEFAULT_SCROLL_MAX_SHIFT, help=f"Maximum vertical scroll pixels per scan. Default: {DEFAULT_SCROLL_MAX_SHIFT}")
     parser.add_argument("--scroll-min-shift", type=int, default=DEFAULT_SCROLL_MIN_SHIFT, help=f"Minimum vertical scroll pixels needed to append content. Default: {DEFAULT_SCROLL_MIN_SHIFT}")
     parser.add_argument("--scroll-min-score", type=float, default=DEFAULT_SCROLL_MIN_SCORE, help=f"Maximum alignment difference allowed for scroll stitching. Default: {DEFAULT_SCROLL_MIN_SCORE}")
@@ -1021,6 +1027,7 @@ def main():
         work_dir = Path(__file__).resolve().parent
     source_is_url = is_url(args.source)
     video_path = resolve_source(args.source, work_dir)
+    duplicate_threshold = args.threshold if args.duplicate_threshold is None else args.duplicate_threshold
     opencv_video_path, temp_video_path = prepare_video_for_opencv(video_path)
     base_name = safe_name(args.name or video_path.stem)
     output_dir = make_unique_dir(work_dir / "sheet" / f"{base_name}")
@@ -1064,10 +1071,10 @@ def main():
             temp_dir,
             args.interval,
             args.threshold,
-            args.duplicate_threshold,
+            duplicate_threshold,
             args.max_frames,
         )
-        image_paths, filter_stats = final_filter_sheet_images(image_paths, args.duplicate_threshold)
+        image_paths, filter_stats = final_filter_sheet_images(image_paths, duplicate_threshold)
         if args.review:
             image_paths, review_stats = review_image_paths(image_paths)
         page_paths = make_sheet_pages(image_paths, output_dir, base_name)
@@ -1081,7 +1088,7 @@ def main():
         "mode": args.mode,
         "roi": roi,
         "threshold": args.threshold,
-        "duplicate_threshold": args.duplicate_threshold,
+        "duplicate_threshold": duplicate_threshold,
         "extraction": extraction_stats,
         "final_filter": filter_stats,
         "review": review_stats,
