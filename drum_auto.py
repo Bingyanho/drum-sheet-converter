@@ -23,7 +23,7 @@ WHITE = (255, 255, 255)
 
 # Tunable defaults
 DEFAULT_INTERVAL = 1.5
-DEFAULT_THRESHOLD = 1.5
+DEFAULT_THRESHOLD = 3.5
 DEFAULT_ROI_MARGIN = 0.0
 DEFAULT_PREVIEW_WIDTH = 960
 DEFAULT_PREVIEW_HEIGHT = 540
@@ -253,6 +253,17 @@ def draw_framed_preview(image, title, subtitle, header_height=58, background=(24
     return canvas
 
 
+def bring_window_to_front(window_name):
+    try:
+        cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
+    except cv2.error:
+        pass
+    try:
+        cv2.moveWindow(window_name, 80, 60)
+    except cv2.error:
+        pass
+
+
 def select_roi_with_preview(preview):
     header_height = 58
     state = {
@@ -286,6 +297,7 @@ def select_roi_with_preview(preview):
     window_name = "Select drum sheet area"
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
     cv2.setMouseCallback(window_name, on_mouse)
+    did_raise_window = False
 
     while True:
         canvas = draw_framed_preview(
@@ -321,6 +333,9 @@ def select_roi_with_preview(preview):
             )
 
         cv2.imshow(window_name, canvas)
+        if not did_raise_window:
+            bring_window_to_front(window_name)
+            did_raise_window = True
         key = cv2.waitKey(20) & 0xFF
         if key in {13, 32}:
             state["confirmed"] = True
@@ -890,7 +905,10 @@ def extract_scrolling_sheet(
 def review_image_paths(image_paths, max_width=1100, max_height=760):
     kept = []
     removed = 0
+    window_name = "Review captured drum sheets"
+    did_raise_window = False
     print("Review mode: press D/Delete/Backspace to remove, any other key to keep, Esc to stop.")
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
     for index, image_path in enumerate(image_paths, start=1):
         image = imread(image_path)
@@ -915,7 +933,10 @@ def review_image_paths(image_paths, max_width=1100, max_height=760):
             1,
             cv2.LINE_AA,
         )
-        cv2.imshow("Review captured drum sheets", canvas)
+        cv2.imshow(window_name, canvas)
+        if not did_raise_window:
+            bring_window_to_front(window_name)
+            did_raise_window = True
         key = cv2.waitKey(0) & 0xFF
         if key == 27:
             kept.extend(image_paths[index - 1 :])
