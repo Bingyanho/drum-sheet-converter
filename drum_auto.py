@@ -396,9 +396,9 @@ def count_staff_like_rows(gray_roi):
     if gray_roi.size == 0:
         return 0
     h = gray_roi.shape[0]
-    dark = gray_roi < 115
+    dark = gray_roi < 205
     row_dark_ratio = np.mean(dark, axis=1)
-    long_dark_rows = row_dark_ratio > 0.08
+    long_dark_rows = row_dark_ratio > 0.12
 
     groups = 0
     in_group = False
@@ -419,7 +419,7 @@ def count_staff_like_rows(gray_roi):
 
 def count_long_horizontal_lines(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    dark = cv2.inRange(gray, 0, 125)
+    dark = cv2.inRange(gray, 0, 210)
     width = image.shape[1]
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (max(80, width // 4), 1))
     horizontal = cv2.morphologyEx(dark, cv2.MORPH_OPEN, kernel, iterations=1)
@@ -450,7 +450,14 @@ def validate_sheet_crop(crop):
 
     if white_ratio < MIN_WHITE_RATIO:
         return False, f"low-white:{white_ratio:.2f}"
-    if dark_ratio < MIN_DARK_RATIO or dark_ratio > MAX_DARK_RATIO:
+    if dark_ratio > MAX_DARK_RATIO:
+        return False, f"bad-dark:{dark_ratio:.2f}"
+    if dark_ratio < MIN_DARK_RATIO:
+        if horizontal_lines >= MIN_HORIZONTAL_LINES:
+            return True, (
+                f"warning:sparse-lines:white={white_ratio:.2f}, dark={dark_ratio:.3f}, "
+                f"lines={staff_rows}/{horizontal_lines}"
+            )
         return False, f"bad-dark:{dark_ratio:.2f}"
     if staff_rows < MIN_STAFF_ROWS or horizontal_lines < MIN_HORIZONTAL_LINES:
         return False, f"few-lines:{staff_rows}/{horizontal_lines}"
