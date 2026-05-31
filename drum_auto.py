@@ -1132,7 +1132,6 @@ def build_parser():
         default=DEFAULT_CONVERSION_MODE,
         help=f"rows captures changed page/score rows; scroll stitches a vertically scrolling page. Default: {DEFAULT_CONVERSION_MODE}",
     )
-    parser.add_argument("--roi-time", type=float, help="Second used for manual crop selection.")
     parser.add_argument("--roi-margin", type=float, default=DEFAULT_ROI_MARGIN, help=f"Extra margin around selected crop. Default: {DEFAULT_ROI_MARGIN}")
     parser.add_argument("--preview-width", type=int, default=DEFAULT_PREVIEW_WIDTH, help=f"Crop selector max width. Default: {DEFAULT_PREVIEW_WIDTH}")
     parser.add_argument("--preview-height", type=int, default=DEFAULT_PREVIEW_HEIGHT, help=f"Crop selector max height. Default: {DEFAULT_PREVIEW_HEIGHT}")
@@ -1177,7 +1176,7 @@ def main():
 
     roi = select_manual_roi(
         opencv_video_path,
-        args.roi_time,
+        None,
         args.preview_width,
         args.preview_height,
         args.roi_margin,

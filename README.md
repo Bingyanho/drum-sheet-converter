@@ -74,7 +74,6 @@ run_gui.bat
 
 - `--interval`：每隔幾秒掃描一次影片。數值越小越不容易漏抓，但速度較慢。
 - `--threshold`：擷取門檻。預設 `3.5`。數值越低越容易保留小變化；數值越高越容易略過相似畫面。
-- `--roi-time`：指定用影片第幾秒作為框選預覽畫面。大影片建議指定，會比較快跳出框選視窗。
 - `--review`：輸出 PDF 前逐張檢查擷取結果，僅適用 `rows` 模式。
 - `--report-json`：輸出處理統計資料。
 - `--delete-temp`：輸出後刪除中間截圖。
@@ -151,7 +150,7 @@ python -m PyInstaller --windowed --name VideoSheetConverter .\drum_gui.py
 
 框選視窗沒有立刻跳出：
 
-大影片或高解析度影片需要先讀取預覽 frame。可以在 Advanced settings 的 `Crop preview time` 填入一個確定有內容的秒數，例如 `80`。
+大影片或高解析度影片需要先讀取預覽 frame，請稍等一下。若經常太慢，建議先使用 1080p 影片再轉換。
 
 轉換太慢：
 

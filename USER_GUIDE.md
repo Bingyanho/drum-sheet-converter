@@ -4,11 +4,7 @@
 
 ## 1. 開啟程式
 
-雙擊：
-
-```text
-VideoSheetConverter.exe
-```
+雙擊 `VideoSheetConverter.exe`，或使用資料夾中最新的 `VideoSheetConverter_v*.exe`。
 
 第一次開啟比較慢是正常的。
 
@@ -51,9 +47,9 @@ rows 模式可用。輸出前逐張檢查，不要的圖片按 `D` 刪除。
 
 `Delete downloaded video after conversion`
 
-建議保持開啟。用 YouTube 連結時，轉換成功後會自動刪除下載影片，避免占空間。
+建議保持開啟。使用 YouTube 連結時，轉換成功後會自動刪除下載影片，避免占空間。
 
-## 6. 什麼時候要調 Advanced settings？
+## 6. Advanced settings 什麼時候要調？
 
 平常不用調。遇到下面情況再打開。
 
@@ -77,22 +73,15 @@ Capture threshold: 1.0
 Capture threshold: 4.0 或 5.0
 ```
 
-框選視窗很慢出現：
-
-```text
-Crop preview time: 60
-```
-
-數字代表使用影片第幾秒當作框選畫面。
-
 scroll 拼接容易斷：
 
 ```text
 Scroll interval: 0.35
-Scroll max shift: 240
-Scroll min shift: 4
-Scroll match score: 22
+Scroll match score: 10
+New content diff: 3.5
 ```
+
+scroll 的最大位移會自動使用「框選高度 - 50」，最小位移固定為 8，通常不用調。
 
 ## 7. YouTube 下載失敗怎麼辦？
 
@@ -122,4 +111,4 @@ Scroll match score: 22
 
 - 漏抓：降低 `Rows interval` 或 `Capture threshold`
 - 抓太多：提高 `Capture threshold`
-- 框選太慢：填 `Crop preview time`
+- scroll 接不上：降低 `Scroll interval`
