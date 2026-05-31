@@ -170,6 +170,7 @@ def frame_content_score(frame):
 
 
 def read_roi_preview_frame(video_path, preferred_time):
+    print("Preparing crop preview frame...", flush=True)
     capture = cv2.VideoCapture(str(video_path))
     if not capture.isOpened():
         raise RuntimeError("OpenCV cannot open the video.")
@@ -181,7 +182,7 @@ def read_roi_preview_frame(video_path, preferred_time):
     candidate_times = []
     if preferred_time is not None:
         candidate_times.append(max(0, float(preferred_time)))
-    if duration > 0:
+    elif duration > 0:
         candidate_times.extend(
             [
                 min(duration * 0.05, 10),
@@ -197,7 +198,13 @@ def read_roi_preview_frame(video_path, preferred_time):
     best_frame = None
     best_time = 0.0
     best_score = -1.0
+    seen_times = set()
     for seconds in candidate_times:
+        seconds = round(float(seconds), 2)
+        if seconds in seen_times:
+            continue
+        seen_times.add(seconds)
+        print(f"Preview search: reading frame near {seconds:.1f}s", flush=True)
         capture.set(cv2.CAP_PROP_POS_MSEC, seconds * 1000)
         ok, frame = capture.read()
         if not ok:

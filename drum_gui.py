@@ -17,6 +17,7 @@ from drum_auto import (
     DEFAULT_SCROLL_MIN_SCORE,
     DEFAULT_SCROLL_MIN_SHIFT,
     DEFAULT_THRESHOLD,
+    is_url,
 )
 
 
@@ -48,6 +49,7 @@ class DrumAutoGUI:
         self.scroll_max_shift = DoubleVar(value=DEFAULT_SCROLL_MAX_SHIFT)
         self.scroll_min_shift = DoubleVar(value=DEFAULT_SCROLL_MIN_SHIFT)
         self.scroll_min_score = DoubleVar(value=DEFAULT_SCROLL_MIN_SCORE)
+        self.roi_time = StringVar(value="")
         self.status = StringVar(value="Ready")
         self.output_hint = StringVar(value="No output yet")
         self.phase = StringVar(value="Idle")
@@ -236,17 +238,18 @@ class DrumAutoGUI:
             child.destroy()
 
         self.advanced_box.columnconfigure(1, weight=1)
+        self.add_advanced_row(0, "Crop preview time", self.roi_time)
         if self.conversion_mode.get() == "scroll":
-            self.add_advanced_row(0, "Scroll interval", self.scroll_interval)
-            self.add_advanced_row(1, "Scroll max shift", self.scroll_max_shift)
-            self.add_advanced_row(2, "Scroll min shift", self.scroll_min_shift)
-            self.add_advanced_row(3, "Scroll match score", self.scroll_min_score)
-            reset_row = 4
+            self.add_advanced_row(1, "Scroll interval", self.scroll_interval)
+            self.add_advanced_row(2, "Scroll max shift", self.scroll_max_shift)
+            self.add_advanced_row(3, "Scroll min shift", self.scroll_min_shift)
+            self.add_advanced_row(4, "Scroll match score", self.scroll_min_score)
+            reset_row = 5
         else:
-            self.add_advanced_row(0, "Rows interval", self.rows_interval)
-            self.add_advanced_row(1, "Change threshold", self.threshold)
-            self.add_advanced_row(2, "Duplicate threshold", self.duplicate_threshold)
-            reset_row = 3
+            self.add_advanced_row(1, "Rows interval", self.rows_interval)
+            self.add_advanced_row(2, "Change threshold", self.threshold)
+            self.add_advanced_row(3, "Duplicate threshold", self.duplicate_threshold)
+            reset_row = 4
 
         actions = ttk.Frame(self.advanced_box, style="Section.TFrame")
         actions.grid(row=reset_row, column=0, columnspan=2, sticky="ew", pady=(10, 0))
@@ -344,6 +347,7 @@ class DrumAutoGUI:
         self.scroll_max_shift.set(DEFAULT_SCROLL_MAX_SHIFT)
         self.scroll_min_shift.set(DEFAULT_SCROLL_MIN_SHIFT)
         self.scroll_min_score.set(DEFAULT_SCROLL_MIN_SCORE)
+        self.roi_time.set("")
 
     def build_command(self):
         source = self.source.get().strip()
@@ -379,7 +383,10 @@ class DrumAutoGUI:
             command.append("--report-json")
         if not self.delete_downloaded_video.get():
             command.append("--keep-downloaded-video")
-        if self.use_browser_cookies.get():
+        roi_time = self.roi_time.get().strip()
+        if roi_time:
+            command.extend(["--roi-time", roi_time])
+        if self.use_browser_cookies.get() and is_url(source):
             command.extend(["--cookies-from-browser", self.cookie_browser.get()])
         return command
 
@@ -442,6 +449,16 @@ class DrumAutoGUI:
             self.phase.set("Downloading")
             self.progress.stop()
             self.progress.configure(mode="determinate")
+            self.update_progress_from_line(clean_line)
+        elif clean_line.startswith("Preparing crop preview"):
+            self.phase.set("Preview")
+            self.progress.configure(mode="indeterminate")
+            self.progress.start(12)
+        elif clean_line.startswith("Preview search:"):
+            self.phase.set("Preview")
+            if str(self.progress.cget("mode")) != "indeterminate":
+                self.progress.configure(mode="indeterminate")
+                self.progress.start(12)
         elif clean_line.startswith("Analyzing video:"):
             self.progress.stop()
             self.phase.set("Converting")
