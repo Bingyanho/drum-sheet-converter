@@ -35,6 +35,8 @@ DEFAULT_SCROLL_INTERVAL = 1.0
 DEFAULT_SCROLL_MAX_SHIFT = 180
 DEFAULT_SCROLL_MIN_SHIFT = 8
 DEFAULT_SCROLL_MIN_SCORE = 18.0
+DEFAULT_SCROLL_MIN_CONTENT_DIFF = 1.5
+DEFAULT_SCROLL_MIN_CONTENT_DENSITY = 0.003
 SCROLL_PAGE_BREAK_SEARCH = 180
 # Validation thresholds.
 MIN_ROI_ASPECT = 2.5
@@ -744,6 +746,22 @@ def estimate_vertical_scroll(previous, current, max_shift):
     return best_shift, best_score
 
 
+def scroll_new_content_metrics(previous, current, shift):
+    height = min(previous.shape[0], current.shape[0])
+    width = min(previous.shape[1], current.shape[1])
+    shift = min(max(1, int(shift)), height)
+    previous_strip = previous[height - shift : height, :width]
+    current_strip = current[height - shift : height, :width]
+    if previous_strip.size == 0 or current_strip.size == 0:
+        return 0.0, 0.0
+
+    previous_gray = cv2.cvtColor(previous_strip, cv2.COLOR_BGR2GRAY)
+    current_gray = cv2.cvtColor(current_strip, cv2.COLOR_BGR2GRAY)
+    diff_score = float(np.mean(cv2.absdiff(previous_gray, current_gray)))
+    content_density = float(np.mean(current_gray < 170))
+    return diff_score, content_density
+
+
 def find_scroll_page_break(resized, target_y, min_y, max_y):
     gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
     dark = gray < 170
@@ -810,6 +828,8 @@ def extract_scrolling_sheet(
     max_shift,
     min_shift,
     min_score,
+    min_content_diff,
+    min_content_density,
     max_frames,
 ):
     capture = cv2.VideoCapture(str(video_path))
@@ -829,6 +849,7 @@ def extract_scrolling_sheet(
     accepted_shifts = 0
     skipped_small_shift = 0
     skipped_bad_match = 0
+    skipped_no_new_content = 0
     total_shift = 0
     frame_index = 0
     last_progress = -1
@@ -862,16 +883,23 @@ def extract_scrolling_sheet(
             continue
 
         shift, score = estimate_vertical_scroll(previous_crop, crop, max_shift)
+        content_diff, content_density = scroll_new_content_metrics(previous_crop, crop, shift)
         if shift < min_shift:
             skipped_small_shift += 1
         elif score > min_score:
             skipped_bad_match += 1
+        elif content_diff < min_content_diff or content_density < min_content_density:
+            skipped_no_new_content += 1
         else:
             pieces.append(crop[-shift:, :].copy())
             total_shift += shift
             accepted_shifts += 1
             previous_crop = crop.copy()
-            print(f"scroll keep {accepted_shifts:03d}: {frame_index / fps:.1f}s, shift={shift}, score={score:.2f}")
+            print(
+                f"scroll keep {accepted_shifts:03d}: {frame_index / fps:.1f}s, "
+                f"shift={shift}, score={score:.2f}, "
+                f"new_diff={content_diff:.2f}, density={content_density:.3f}"
+            )
             if max_frames and accepted_shifts >= max_frames:
                 print(f"Reached --max-frames={max_frames}. Stop.")
                 break
@@ -896,6 +924,7 @@ def extract_scrolling_sheet(
         "stitched_height": int(stitched.shape[0]),
         "skipped_small_shift": skipped_small_shift,
         "skipped_bad_match": skipped_bad_match,
+        "skipped_no_new_content": skipped_no_new_content,
         "stitched_path": str(stitched_path),
     }
     print(f"Stitched scrolling sheet height={stitched.shape[0]}px, accepted shifts={accepted_shifts}.")
@@ -1028,6 +1057,8 @@ def build_parser():
     parser.add_argument("--scroll-max-shift", type=int, default=DEFAULT_SCROLL_MAX_SHIFT, help=f"Maximum vertical scroll pixels per scan. Default: {DEFAULT_SCROLL_MAX_SHIFT}")
     parser.add_argument("--scroll-min-shift", type=int, default=DEFAULT_SCROLL_MIN_SHIFT, help=f"Minimum vertical scroll pixels needed to append content. Default: {DEFAULT_SCROLL_MIN_SHIFT}")
     parser.add_argument("--scroll-min-score", type=float, default=DEFAULT_SCROLL_MIN_SCORE, help=f"Maximum alignment difference allowed for scroll stitching. Default: {DEFAULT_SCROLL_MIN_SCORE}")
+    parser.add_argument("--scroll-min-content-diff", type=float, default=DEFAULT_SCROLL_MIN_CONTENT_DIFF, help=f"Minimum difference required in newly appended scroll content. Default: {DEFAULT_SCROLL_MIN_CONTENT_DIFF}")
+    parser.add_argument("--scroll-min-content-density", type=float, default=DEFAULT_SCROLL_MIN_CONTENT_DENSITY, help=argparse.SUPPRESS)
     parser.add_argument("--max-frames", type=int, default=DEFAULT_MAX_FRAMES, help=f"Maximum kept frames. {DEFAULT_MAX_FRAMES} means unlimited.")
     parser.add_argument("--review", action="store_true", help="Review captured rows before page generation.")
     parser.add_argument("--report-json", action="store_true", help="Write processing statistics to report.json.")
@@ -1082,6 +1113,8 @@ def main():
             args.scroll_max_shift,
             args.scroll_min_shift,
             args.scroll_min_score,
+            args.scroll_min_content_diff,
+            args.scroll_min_content_density,
             args.max_frames,
         )
         page_paths = make_scroll_pages(stitched_image, output_dir, base_name)
@@ -1142,7 +1175,8 @@ def main():
             f"scanned={extraction_stats['scanned_frames']}, "
             f"accepted_shifts={extraction_stats['accepted_shifts']}, "
             f"height={extraction_stats['stitched_height']}, "
-            f"bad_match={extraction_stats['skipped_bad_match']}"
+            f"bad_match={extraction_stats['skipped_bad_match']}, "
+            f"no_new_content={extraction_stats['skipped_no_new_content']}"
         )
     else:
         print(f"Done: kept {len(image_paths)} captured image(s), wrote {len(page_paths)} JPG page(s).")

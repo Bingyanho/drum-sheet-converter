@@ -85,6 +85,7 @@ run_gui.bat
 - `--scroll-max-shift`：每次掃描最多搜尋多少垂直位移。
 - `--scroll-min-shift`：至少移動多少像素才把新內容接上去。
 - `--scroll-min-score`：拼接時允許的最大對齊誤差。
+- `--scroll-min-content-diff`：新接上的內容至少要和前一張有多少差異，避免只因為重疊區剛好能對齊就誤接。
 
 ## 命令列範例
 

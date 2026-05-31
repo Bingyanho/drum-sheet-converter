@@ -13,6 +13,7 @@ from drum_auto import (
     DEFAULT_INTERVAL,
     DEFAULT_SCROLL_INTERVAL,
     DEFAULT_SCROLL_MAX_SHIFT,
+    DEFAULT_SCROLL_MIN_CONTENT_DIFF,
     DEFAULT_SCROLL_MIN_SCORE,
     DEFAULT_SCROLL_MIN_SHIFT,
     DEFAULT_THRESHOLD,
@@ -44,6 +45,7 @@ class VideoSheetConverterGUI:
         self.scroll_max_shift = DoubleVar(value=DEFAULT_SCROLL_MAX_SHIFT)
         self.scroll_min_shift = DoubleVar(value=DEFAULT_SCROLL_MIN_SHIFT)
         self.scroll_min_score = DoubleVar(value=DEFAULT_SCROLL_MIN_SCORE)
+        self.scroll_min_content_diff = DoubleVar(value=DEFAULT_SCROLL_MIN_CONTENT_DIFF)
         self.roi_time = StringVar(value="")
         self.status = StringVar(value="Ready")
         self.output_hint = StringVar(value="No output yet")
@@ -224,7 +226,8 @@ class VideoSheetConverterGUI:
             self.add_advanced_row(2, "Scroll max shift", self.scroll_max_shift)
             self.add_advanced_row(3, "Scroll min shift", self.scroll_min_shift)
             self.add_advanced_row(4, "Scroll match score", self.scroll_min_score)
-            reset_row = 5
+            self.add_advanced_row(5, "New content diff", self.scroll_min_content_diff)
+            reset_row = 6
         else:
             self.add_advanced_row(1, "Rows interval", self.rows_interval)
             self.add_advanced_row(2, "Capture threshold", self.threshold)
@@ -325,6 +328,7 @@ class VideoSheetConverterGUI:
         self.scroll_max_shift.set(DEFAULT_SCROLL_MAX_SHIFT)
         self.scroll_min_shift.set(DEFAULT_SCROLL_MIN_SHIFT)
         self.scroll_min_score.set(DEFAULT_SCROLL_MIN_SCORE)
+        self.scroll_min_content_diff.set(DEFAULT_SCROLL_MIN_CONTENT_DIFF)
         self.roi_time.set("")
 
     def build_command(self):
@@ -351,6 +355,8 @@ class VideoSheetConverterGUI:
                 str(int(self.scroll_min_shift.get())),
                 "--scroll-min-score",
                 str(self.scroll_min_score.get()),
+                "--scroll-min-content-diff",
+                str(self.scroll_min_content_diff.get()),
             ]
         )
         if self.review.get() and self.conversion_mode.get() == "rows":
