@@ -65,7 +65,7 @@ def imwrite(path, image):
 def safe_name(text):
     text = re.sub(r'[\\/:*?"<>|]+', "_", text).strip()
     text = re.sub(r"\s+", "_", text)
-    return text or "drum_sheet"
+    return text or "video_sheet"
 
 
 def make_unique_dir(path):
@@ -159,7 +159,7 @@ def prepare_video_for_opencv(video_path):
         str(video_path).encode("ascii")
         return video_path, None
     except UnicodeEncodeError:
-        temp_dir = Path(tempfile.gettempdir()) / "drum_auto"
+        temp_dir = Path(tempfile.gettempdir()) / "video_sheet_converter"
         temp_dir.mkdir(parents=True, exist_ok=True)
         temp_path = temp_dir / f"{safe_name(video_path.stem)}{video_path.suffix}"
         shutil.copy2(video_path, temp_path)
@@ -294,7 +294,7 @@ def select_roi_with_preview(preview):
             state["dragging"] = False
             state["end"] = point
 
-    window_name = "Select drum sheet area"
+    window_name = "Select page area"
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
     cv2.setMouseCallback(window_name, on_mouse)
     did_raise_window = False
@@ -302,8 +302,8 @@ def select_roi_with_preview(preview):
     while True:
         canvas = draw_framed_preview(
             preview,
-            "Select Drum Sheet Area",
-            "Drag over the sheet. Enter/Space: confirm  R: reset  Esc/C: cancel",
+            "Select Page Area",
+            "Drag over the content. Enter/Space: confirm  R: reset  Esc/C: cancel",
             header_height,
         )
         if state["start"] and state["end"]:
@@ -362,13 +362,13 @@ def select_manual_roi(video_path, roi_time, preview_width, preview_height, margi
     frame, seconds, score = read_roi_preview_frame(video_path, roi_time)
     preview, scale = resize_for_preview(frame, preview_width, preview_height)
     print(f"Using a frame near {seconds:.1f}s for crop selection. score={score:.1f}")
-    print("Drag-select the drum sheet area, then press Enter/Space. Press Esc/C to cancel.")
+    print("Drag-select the content area, then press Enter/Space. Press Esc/C to cancel.")
 
     selected = select_roi_with_preview(preview)
 
     x, y, w, h = [int(round(value / scale)) for value in selected]
     if w <= 0 or h <= 0:
-        raise RuntimeError("No drum sheet area selected.")
+        raise RuntimeError("No content area selected.")
 
     margin_x = int(round(w * margin_ratio))
     margin_y = int(round(h * margin_ratio))
@@ -464,7 +464,7 @@ def should_skip_failed_validation(reason):
     if reason_type in {"empty", "bad-shape"}:
         return True
     # Manual mode trusts the selected ROI, but still rejects frames whose
-    # brightness/darkness profile is clearly not a drum sheet.
+    # brightness/darkness profile is clearly not a sheet-like page.
     return reason_type in {"low-white", "bad-dark"}
 
 
@@ -905,7 +905,7 @@ def extract_scrolling_sheet(
 def review_image_paths(image_paths, max_width=1100, max_height=760):
     kept = []
     removed = 0
-    window_name = "Review captured drum sheets"
+    window_name = "Review captured images"
     did_raise_window = False
     print("Review mode: press D/Delete/Backspace to remove, any other key to keep, Esc to stop.")
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
@@ -919,7 +919,7 @@ def review_image_paths(image_paths, max_width=1100, max_height=760):
         preview, _ = resize_for_preview(image, max_width, max_height - 58)
         canvas = draw_framed_preview(
             preview,
-            f"Review Captured Row {index}/{len(image_paths)}",
+            f"Review Captured Image {index}/{len(image_paths)}",
             "Enter/Space/K: keep  D/Delete/Backspace: remove  Esc: keep the rest",
         )
         cv2.rectangle(canvas, (0, 58), (canvas.shape[1] - 1, canvas.shape[0] - 1), (72, 82, 96), 1)
@@ -962,7 +962,7 @@ def make_sheet_pages(image_paths, output_dir, base_name):
     crop_h, crop_w = first.shape[:2]
     resized_h = int(crop_h * (A4_WIDTH / crop_w))
     if resized_h <= 0 or resized_h > A4_HEIGHT:
-        raise RuntimeError("Selected drum sheet area is too tall for one A4 row.")
+        raise RuntimeError("Selected content area is too tall for one A4 row.")
 
     rows_per_page = max(1, A4_HEIGHT // resized_h)
     page_count = math.ceil(len(image_paths) / rows_per_page)
@@ -1008,15 +1008,15 @@ def write_report(report_path, data):
 
 def build_parser():
     parser = argparse.ArgumentParser(
-        description="Manually crop a dynamic drum sheet video and convert it into printable pages."
+        description="Manually crop a sheet or document video and convert it into printable pages."
     )
     parser.add_argument("source", help="Local video path or YouTube URL")
-    parser.add_argument("-n", "--name", help="Output sheet name. Defaults to the video file name.")
+    parser.add_argument("-n", "--name", help="Output name. Defaults to the video file name.")
     parser.add_argument(
         "--mode",
         choices=["rows", "scroll"],
         default=DEFAULT_CONVERSION_MODE,
-        help=f"rows captures changed staff rows; scroll stitches a vertically scrolling full sheet. Default: {DEFAULT_CONVERSION_MODE}",
+        help=f"rows captures changed page/score rows; scroll stitches a vertically scrolling page. Default: {DEFAULT_CONVERSION_MODE}",
     )
     parser.add_argument("--roi-time", type=float, help="Second used for manual crop selection.")
     parser.add_argument("--roi-margin", type=float, default=DEFAULT_ROI_MARGIN, help=f"Extra margin around selected crop. Default: {DEFAULT_ROI_MARGIN}")
@@ -1136,7 +1136,7 @@ def main():
 
     print()
     if args.mode == "scroll":
-        print(f"Done: stitched scrolling sheet, wrote {len(page_paths)} JPG page(s).")
+        print(f"Done: stitched scrolling content, wrote {len(page_paths)} JPG page(s).")
         print(
             "Stats: "
             f"scanned={extraction_stats['scanned_frames']}, "
@@ -1145,7 +1145,7 @@ def main():
             f"bad_match={extraction_stats['skipped_bad_match']}"
         )
     else:
-        print(f"Done: kept {len(image_paths)} sheet rows, wrote {len(page_paths)} JPG page(s).")
+        print(f"Done: kept {len(image_paths)} captured image(s), wrote {len(page_paths)} JPG page(s).")
         print(
             "Stats: "
             f"scanned={extraction_stats['scanned_frames']}, "

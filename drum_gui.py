@@ -22,10 +22,10 @@ from drum_auto import (
 APP_DIR = Path(__file__).resolve().parent
 
 
-class DrumAutoGUI:
+class VideoSheetConverterGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Drum Sheet Converter")
+        self.root.title("Video Sheet Converter")
         self.root.geometry("1040x680")
         self.root.minsize(900, 620)
         self.process = None
@@ -92,10 +92,10 @@ class DrumAutoGUI:
         header.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 18))
         header.columnconfigure(0, weight=1)
 
-        ttk.Label(header, text="Drum Sheet Converter", style="Title.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(header, text="Video Sheet Converter", style="Title.TLabel").grid(row=0, column=0, sticky="w")
         ttk.Label(
             header,
-            text="Select the sheet area once, then generate clean printable drum pages.",
+            text="Capture score or document pages from videos and export clean printable files.",
             style="Subtitle.TLabel",
         ).grid(row=1, column=0, sticky="w", pady=(4, 0))
         self.status_label = ttk.Label(header, textvariable=self.status, style="Status.TLabel")
@@ -171,7 +171,7 @@ class DrumAutoGUI:
         mode_box.bind("<<ComboboxSelected>>", lambda event: self.refresh_advanced_fields())
         ttk.Label(
             section,
-            text="Use scroll for full pages that move downward.",
+            text="Use scroll when the selected page area moves downward continuously.",
             style="Muted.TLabel",
         ).grid(row=8, column=0, sticky="w", pady=(4, 0))
 
@@ -181,7 +181,7 @@ class DrumAutoGUI:
         section.columnconfigure(0, weight=1)
 
         ttk.Label(section, text="2. Output Options", style="CardTitle.TLabel").grid(row=0, column=0, sticky="w")
-        ttk.Checkbutton(section, text="Review captured rows before creating PDF", variable=self.review).grid(
+        ttk.Checkbutton(section, text="Review captured images before creating PDF", variable=self.review).grid(
             row=1, column=0, sticky="w", pady=(10, 4)
         )
         ttk.Checkbutton(section, text="Save report.json", variable=self.report_json).grid(row=2, column=0, sticky="w")
@@ -499,7 +499,7 @@ def main():
         return
 
     root = Tk()
-    DrumAutoGUI(root)
+    VideoSheetConverterGUI(root)
     root.mainloop()
 
 
