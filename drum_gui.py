@@ -427,11 +427,13 @@ class VideoSheetConverterGUI:
             if str(self.progress.cget("mode")) != "indeterminate":
                 self.progress.configure(mode="indeterminate")
                 self.progress.start(12)
-        elif clean_line.startswith("Analyzing video:"):
+        elif clean_line.startswith("Analyzing video:") or clean_line.startswith("Analyzing scrolling"):
             self.progress.stop()
             self.phase.set("Converting")
             self.progress.configure(mode="determinate", value=0)
         elif clean_line.startswith("Convert progress:"):
+            self.progress.stop()
+            self.progress.configure(mode="determinate")
             self.phase.set("Converting")
             self.update_progress_from_line(clean_line)
         self.append_log(line)
