@@ -297,7 +297,7 @@ def select_roi_with_preview(preview):
             state["end"] = point
 
     window_name = "Select page area"
-    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.namedWindow(window_name, cv2.WINDOW_AUTOSIZE)
     cv2.setMouseCallback(window_name, on_mouse)
     did_raise_window = False
 
@@ -1029,7 +1029,7 @@ def review_image_paths(image_paths, max_width=1100, max_height=760):
     window_name = "Review captured images"
     did_raise_window = False
     print("Review mode: press D/Delete/Backspace to remove, any other key to keep, Esc to stop.")
-    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.namedWindow(window_name, cv2.WINDOW_AUTOSIZE)
 
     for index, image_path in enumerate(image_paths, start=1):
         image = imread(image_path)
