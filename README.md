@@ -78,11 +78,7 @@ python .\drum_auto.py "https://youtu.be/example" --name song_name --mode scroll
 --keep-downloaded-video
 ```
 
-如果 YouTube 顯示需要登入或確認不是機器人，請先在瀏覽器登入 YouTube，然後在 GUI 勾選 `Use browser cookies for YouTube`，並選擇你登入的瀏覽器。命令列可使用：
-
-```powershell
-python .\drum_auto.py "https://youtu.be/example" --name song_name --mode scroll --cookies-from-browser edge
-```
+如果 YouTube 顯示需要登入或確認不是機器人，建議先用瀏覽器或其他下載工具把影片存成 MP4，再用本機影片檔轉換。這樣最穩，也不會受到瀏覽器 cookies 鎖定影響。
 
 ## 常用參數
 
@@ -90,8 +86,6 @@ python .\drum_auto.py "https://youtu.be/example" --name song_name --mode scroll 
 - `--review`：輸出前逐張檢查擷取結果，僅適用 rows 模式。
 - `--report-json`：輸出處理統計資料。
 - `--delete-temp`：輸出後刪除中間截圖。
-- `--cookies-from-browser`：使用瀏覽器 cookies 下載需要登入驗證的 YouTube 影片。
-
 rows 模式參數：
 
 - `--threshold`：畫面差異門檻。數值越低，越容易保留小變化。

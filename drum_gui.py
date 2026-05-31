@@ -17,7 +17,6 @@ from drum_auto import (
     DEFAULT_SCROLL_MIN_SCORE,
     DEFAULT_SCROLL_MIN_SHIFT,
     DEFAULT_THRESHOLD,
-    is_url,
 )
 
 
@@ -38,8 +37,6 @@ class DrumAutoGUI:
         self.review = BooleanVar(value=False)
         self.report_json = BooleanVar(value=False)
         self.delete_downloaded_video = BooleanVar(value=DEFAULT_DELETE_DOWNLOADED_VIDEO)
-        self.use_browser_cookies = BooleanVar(value=False)
-        self.cookie_browser = StringVar(value="edge")
         self.conversion_mode = StringVar(value=DEFAULT_CONVERSION_MODE)
         self.show_advanced = BooleanVar(value=False)
         self.rows_interval = DoubleVar(value=DEFAULT_INTERVAL)
@@ -195,21 +192,6 @@ class DrumAutoGUI:
             text="Delete downloaded video after conversion",
             variable=self.delete_downloaded_video,
         ).grid(row=3, column=0, sticky="w", pady=(4, 0))
-        ttk.Checkbutton(
-            section,
-            text="Use browser cookies for YouTube",
-            variable=self.use_browser_cookies,
-        ).grid(row=4, column=0, sticky="w", pady=(4, 0))
-        browser_row = ttk.Frame(section, style="Section.TFrame")
-        browser_row.grid(row=5, column=0, sticky="ew", pady=(6, 0))
-        browser_row.columnconfigure(1, weight=1)
-        ttk.Label(browser_row, text="Browser", style="Body.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 10))
-        ttk.Combobox(
-            browser_row,
-            textvariable=self.cookie_browser,
-            values=("edge", "chrome", "firefox", "brave", "opera", "vivaldi"),
-            state="readonly",
-        ).grid(row=0, column=1, sticky="ew")
 
     def build_advanced_section(self, parent):
         section = ttk.Frame(parent, style="Section.TFrame")
@@ -386,8 +368,6 @@ class DrumAutoGUI:
         roi_time = self.roi_time.get().strip()
         if roi_time:
             command.extend(["--roi-time", roi_time])
-        if self.use_browser_cookies.get() and is_url(source):
-            command.extend(["--cookies-from-browser", self.cookie_browser.get()])
         return command
 
     def set_status(self, text, style="Status.TLabel"):
