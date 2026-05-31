@@ -82,10 +82,10 @@ run_gui.bat
 
 `scroll` 模式進階參數：
 
-- `--scroll-max-shift`：每次掃描最多搜尋多少垂直位移。
-- `--scroll-min-shift`：至少移動多少像素才把新內容接上去。
-- `--scroll-min-score`：拼接時允許的最大對齊誤差。
+- `--scroll-min-score`：拼接時允許的最大對齊誤差，預設 `10.0`。
 - `--scroll-min-content-diff`：新接上的內容至少要和前一張有多少差異，避免只因為重疊區剛好能對齊就誤接。
+
+scroll 模式會自動把最大位移設成「框選高度減 50」，最小位移固定為 8，一般使用者不需要調整。
 
 ## 命令列範例
 
@@ -110,7 +110,7 @@ python .\drum_auto.py .\video.mp4 --name output_name --mode scroll --interval 0.
 `scroll` 模式如果捲動速度較快：
 
 ```powershell
-python .\drum_auto.py .\video.mp4 --name output_name --mode scroll --interval 0.2 --scroll-max-shift 240 --scroll-min-shift 4 --scroll-min-score 22
+python .\drum_auto.py .\video.mp4 --name output_name --mode scroll --interval 0.2 --scroll-min-score 10 --scroll-min-content-diff 3.5
 ```
 
 YouTube URL：

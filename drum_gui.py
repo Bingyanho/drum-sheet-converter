@@ -12,10 +12,8 @@ from drum_auto import (
     DEFAULT_DELETE_DOWNLOADED_VIDEO,
     DEFAULT_INTERVAL,
     DEFAULT_SCROLL_INTERVAL,
-    DEFAULT_SCROLL_MAX_SHIFT,
     DEFAULT_SCROLL_MIN_CONTENT_DIFF,
     DEFAULT_SCROLL_MIN_SCORE,
-    DEFAULT_SCROLL_MIN_SHIFT,
     DEFAULT_THRESHOLD,
 )
 
@@ -42,8 +40,6 @@ class VideoSheetConverterGUI:
         self.rows_interval = DoubleVar(value=DEFAULT_INTERVAL)
         self.scroll_interval = DoubleVar(value=DEFAULT_SCROLL_INTERVAL)
         self.threshold = DoubleVar(value=DEFAULT_THRESHOLD)
-        self.scroll_max_shift = DoubleVar(value=DEFAULT_SCROLL_MAX_SHIFT)
-        self.scroll_min_shift = DoubleVar(value=DEFAULT_SCROLL_MIN_SHIFT)
         self.scroll_min_score = DoubleVar(value=DEFAULT_SCROLL_MIN_SCORE)
         self.scroll_min_content_diff = DoubleVar(value=DEFAULT_SCROLL_MIN_CONTENT_DIFF)
         self.roi_time = StringVar(value="")
@@ -223,11 +219,9 @@ class VideoSheetConverterGUI:
         self.add_advanced_row(0, "Crop preview time", self.roi_time)
         if self.conversion_mode.get() == "scroll":
             self.add_advanced_row(1, "Scroll interval", self.scroll_interval)
-            self.add_advanced_row(2, "Scroll max shift", self.scroll_max_shift)
-            self.add_advanced_row(3, "Scroll min shift", self.scroll_min_shift)
-            self.add_advanced_row(4, "Scroll match score", self.scroll_min_score)
-            self.add_advanced_row(5, "New content diff", self.scroll_min_content_diff)
-            reset_row = 6
+            self.add_advanced_row(2, "Scroll match score", self.scroll_min_score)
+            self.add_advanced_row(3, "New content diff", self.scroll_min_content_diff)
+            reset_row = 4
         else:
             self.add_advanced_row(1, "Rows interval", self.rows_interval)
             self.add_advanced_row(2, "Capture threshold", self.threshold)
@@ -325,8 +319,6 @@ class VideoSheetConverterGUI:
         self.rows_interval.set(DEFAULT_INTERVAL)
         self.scroll_interval.set(DEFAULT_SCROLL_INTERVAL)
         self.threshold.set(DEFAULT_THRESHOLD)
-        self.scroll_max_shift.set(DEFAULT_SCROLL_MAX_SHIFT)
-        self.scroll_min_shift.set(DEFAULT_SCROLL_MIN_SHIFT)
         self.scroll_min_score.set(DEFAULT_SCROLL_MIN_SCORE)
         self.scroll_min_content_diff.set(DEFAULT_SCROLL_MIN_CONTENT_DIFF)
         self.roi_time.set("")
@@ -349,10 +341,6 @@ class VideoSheetConverterGUI:
                 str(self.scroll_interval.get() if self.conversion_mode.get() == "scroll" else self.rows_interval.get()),
                 "--threshold",
                 str(self.threshold.get()),
-                "--scroll-max-shift",
-                str(int(self.scroll_max_shift.get())),
-                "--scroll-min-shift",
-                str(int(self.scroll_min_shift.get())),
                 "--scroll-min-score",
                 str(self.scroll_min_score.get()),
                 "--scroll-min-content-diff",

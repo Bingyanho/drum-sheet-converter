@@ -32,10 +32,9 @@ DEFAULT_DOWNLOAD_MAX_HEIGHT = 1080
 DEFAULT_DELETE_DOWNLOADED_VIDEO = True
 DEFAULT_CONVERSION_MODE = "rows"
 DEFAULT_SCROLL_INTERVAL = 1.0
-DEFAULT_SCROLL_MAX_SHIFT = 180
 DEFAULT_SCROLL_MIN_SHIFT = 8
-DEFAULT_SCROLL_MIN_SCORE = 18.0
-DEFAULT_SCROLL_MIN_CONTENT_DIFF = 1.5
+DEFAULT_SCROLL_MIN_SCORE = 10.0
+DEFAULT_SCROLL_MIN_CONTENT_DIFF = 3.5
 DEFAULT_SCROLL_MIN_CONTENT_DENSITY = 0.003
 SCROLL_PAGE_BREAK_SEARCH = 180
 # Validation thresholds.
@@ -854,7 +853,10 @@ def extract_scrolling_sheet(
     frame_index = 0
     last_progress = -1
 
-    print(f"Analyzing scrolling sheet: fps={fps:.2f}, duration~{duration:.1f}s, scan every {interval:.2f}s")
+    print(
+        f"Analyzing scrolling sheet: fps={fps:.2f}, duration~{duration:.1f}s, "
+        f"scan every {interval:.2f}s, max_shift={max_shift}, min_shift={min_shift}"
+    )
     while True:
         ok, frame = capture.read()
         if not ok:
@@ -1054,8 +1056,8 @@ def build_parser():
     parser.add_argument("--interval", type=float, default=DEFAULT_INTERVAL, help=f"Scan interval in seconds. Default: {DEFAULT_INTERVAL}")
     parser.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD, help=f"Capture threshold. Lower values keep smaller changes. Default: {DEFAULT_THRESHOLD}")
     parser.add_argument("--duplicate-threshold", type=float, help=argparse.SUPPRESS)
-    parser.add_argument("--scroll-max-shift", type=int, default=DEFAULT_SCROLL_MAX_SHIFT, help=f"Maximum vertical scroll pixels per scan. Default: {DEFAULT_SCROLL_MAX_SHIFT}")
-    parser.add_argument("--scroll-min-shift", type=int, default=DEFAULT_SCROLL_MIN_SHIFT, help=f"Minimum vertical scroll pixels needed to append content. Default: {DEFAULT_SCROLL_MIN_SHIFT}")
+    parser.add_argument("--scroll-max-shift", type=int, help=argparse.SUPPRESS)
+    parser.add_argument("--scroll-min-shift", type=int, default=DEFAULT_SCROLL_MIN_SHIFT, help=argparse.SUPPRESS)
     parser.add_argument("--scroll-min-score", type=float, default=DEFAULT_SCROLL_MIN_SCORE, help=f"Maximum alignment difference allowed for scroll stitching. Default: {DEFAULT_SCROLL_MIN_SCORE}")
     parser.add_argument("--scroll-min-content-diff", type=float, default=DEFAULT_SCROLL_MIN_CONTENT_DIFF, help=f"Minimum difference required in newly appended scroll content. Default: {DEFAULT_SCROLL_MIN_CONTENT_DIFF}")
     parser.add_argument("--scroll-min-content-density", type=float, default=DEFAULT_SCROLL_MIN_CONTENT_DENSITY, help=argparse.SUPPRESS)
@@ -1098,6 +1100,7 @@ def main():
         args.roi_margin,
     )
     print(f"Selected crop: {roi}")
+    scroll_max_shift = args.scroll_max_shift if args.scroll_max_shift else max(1, roi[3] - 50)
 
     filter_stats = {"input_images": 0, "kept_images": 0, "skipped_duplicates": 0}
     review_stats = {"reviewed": 0, "removed": 0}
@@ -1110,7 +1113,7 @@ def main():
             roi,
             temp_dir,
             args.interval,
-            args.scroll_max_shift,
+            scroll_max_shift,
             args.scroll_min_shift,
             args.scroll_min_score,
             args.scroll_min_content_diff,
