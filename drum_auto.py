@@ -36,6 +36,7 @@ DEFAULT_SCROLL_MIN_SHIFT = 8
 DEFAULT_SCROLL_MIN_SCORE = 10.0
 DEFAULT_SCROLL_MIN_CONTENT_DIFF = 3.5
 DEFAULT_SCROLL_MIN_CONTENT_DENSITY = 0.003
+SCROLL_SHIFT_FAST_WINDOW = 100
 SCROLL_PAGE_BREAK_SEARCH = 180
 # Validation thresholds.
 MIN_ROI_ASPECT = 2.5
@@ -719,30 +720,37 @@ def final_filter_sheet_images(image_paths, duplicate_threshold):
     return filtered, stats
 
 
-def estimate_vertical_scroll(previous, current, max_shift):
+def estimate_vertical_scroll(previous, current, max_shift, search_start=1, search_end=None):
     previous_gray = cv2.cvtColor(previous, cv2.COLOR_BGR2GRAY)
     current_gray = cv2.cvtColor(current, cv2.COLOR_BGR2GRAY)
     height = min(previous_gray.shape[0], current_gray.shape[0])
     max_shift = min(max_shift, height - 20)
     if max_shift <= 0:
-        return 0, 999.0
+        return 0, 999.0, 0
 
     previous_gray = previous_gray[:height, :]
     current_gray = current_gray[:height, :]
+    search_start = max(1, int(search_start))
+    search_end = max_shift if search_end is None else min(max_shift, int(search_end))
+    if search_start > search_end:
+        return 0, 999.0, 0
+
     best_shift = 0
     best_score = 999.0
+    searched = 0
 
-    for shift in range(1, max_shift + 1):
+    for shift in range(search_start, search_end + 1):
         overlap_prev = previous_gray[shift:, :]
         overlap_curr = current_gray[: height - shift, :]
         if overlap_prev.size == 0:
             continue
+        searched += 1
         score = float(np.mean(cv2.absdiff(overlap_prev, overlap_curr)))
         if score < best_score:
             best_score = score
             best_shift = shift
 
-    return best_shift, best_score
+    return best_shift, best_score, searched
 
 
 def scroll_new_content_metrics(previous, current, shift):
@@ -759,6 +767,26 @@ def scroll_new_content_metrics(previous, current, shift):
     diff_score = float(np.mean(cv2.absdiff(previous_gray, current_gray)))
     content_density = float(np.mean(current_gray < 170))
     return diff_score, content_density
+
+
+def evaluate_scroll_candidate(
+    previous,
+    current,
+    shift,
+    score,
+    min_shift,
+    min_score,
+    min_content_diff,
+    min_content_density,
+):
+    content_diff, content_density = scroll_new_content_metrics(previous, current, shift)
+    if shift < min_shift:
+        return False, "small_shift", content_diff, content_density
+    if score > min_score:
+        return False, "bad_match", content_diff, content_density
+    if content_diff < min_content_diff or content_density < min_content_density:
+        return False, "no_new_content", content_diff, content_density
+    return True, "ok", content_diff, content_density
 
 
 def find_scroll_page_break(resized, target_y, min_y, max_y):
@@ -849,7 +877,11 @@ def extract_scrolling_sheet(
     skipped_small_shift = 0
     skipped_bad_match = 0
     skipped_no_new_content = 0
+    fast_shift_searches = 0
+    full_shift_searches = 0
+    shift_search_pixels = 0
     total_shift = 0
+    shift_history = []
     frame_index = 0
     last_progress = -1
 
@@ -884,23 +916,71 @@ def extract_scrolling_sheet(
             frame_index += 1
             continue
 
-        shift, score = estimate_vertical_scroll(previous_crop, crop, max_shift)
-        content_diff, content_density = scroll_new_content_metrics(previous_crop, crop, shift)
-        if shift < min_shift:
+        used_fast_search = False
+        if shift_history:
+            average_shift = int(round(sum(shift_history) / len(shift_history)))
+            fast_start = max(1, average_shift - SCROLL_SHIFT_FAST_WINDOW)
+            fast_end = min(max_shift, average_shift + SCROLL_SHIFT_FAST_WINDOW)
+            shift, score, searched = estimate_vertical_scroll(previous_crop, crop, max_shift, fast_start, fast_end)
+            shift_search_pixels += searched
+            fast_shift_searches += 1
+            used_fast_search = True
+            accepted, reason, content_diff, content_density = evaluate_scroll_candidate(
+                previous_crop,
+                crop,
+                shift,
+                score,
+                min_shift,
+                min_score,
+                min_content_diff,
+                min_content_density,
+            )
+            if not accepted:
+                shift, score, searched = estimate_vertical_scroll(previous_crop, crop, max_shift)
+                shift_search_pixels += searched
+                full_shift_searches += 1
+                accepted, reason, content_diff, content_density = evaluate_scroll_candidate(
+                    previous_crop,
+                    crop,
+                    shift,
+                    score,
+                    min_shift,
+                    min_score,
+                    min_content_diff,
+                    min_content_density,
+                )
+        else:
+            shift, score, searched = estimate_vertical_scroll(previous_crop, crop, max_shift)
+            shift_search_pixels += searched
+            full_shift_searches += 1
+            accepted, reason, content_diff, content_density = evaluate_scroll_candidate(
+                previous_crop,
+                crop,
+                shift,
+                score,
+                min_shift,
+                min_score,
+                min_content_diff,
+                min_content_density,
+            )
+
+        if reason == "small_shift":
             skipped_small_shift += 1
-        elif score > min_score:
+        elif reason == "bad_match":
             skipped_bad_match += 1
-        elif content_diff < min_content_diff or content_density < min_content_density:
+        elif reason == "no_new_content":
             skipped_no_new_content += 1
         else:
             pieces.append(crop[-shift:, :].copy())
             total_shift += shift
             accepted_shifts += 1
+            shift_history.append(shift)
             previous_crop = crop.copy()
             print(
                 f"scroll keep {accepted_shifts:03d}: {frame_index / fps:.1f}s, "
                 f"shift={shift}, score={score:.2f}, "
-                f"new_diff={content_diff:.2f}, density={content_density:.3f}"
+                f"new_diff={content_diff:.2f}, density={content_density:.3f}, "
+                f"search={'fast' if used_fast_search else 'full'}"
             )
             if max_frames and accepted_shifts >= max_frames:
                 print(f"Reached --max-frames={max_frames}. Stop.")
@@ -927,6 +1007,9 @@ def extract_scrolling_sheet(
         "skipped_small_shift": skipped_small_shift,
         "skipped_bad_match": skipped_bad_match,
         "skipped_no_new_content": skipped_no_new_content,
+        "fast_shift_searches": fast_shift_searches,
+        "full_shift_searches": full_shift_searches,
+        "shift_search_pixels": shift_search_pixels,
         "stitched_path": str(stitched_path),
     }
     print(f"Stitched scrolling sheet height={stitched.shape[0]}px, accepted shifts={accepted_shifts}.")
@@ -1179,7 +1262,9 @@ def main():
             f"accepted_shifts={extraction_stats['accepted_shifts']}, "
             f"height={extraction_stats['stitched_height']}, "
             f"bad_match={extraction_stats['skipped_bad_match']}, "
-            f"no_new_content={extraction_stats['skipped_no_new_content']}"
+            f"no_new_content={extraction_stats['skipped_no_new_content']}, "
+            f"fast_searches={extraction_stats['fast_shift_searches']}, "
+            f"full_searches={extraction_stats['full_shift_searches']}"
         )
     else:
         print(f"Done: kept {len(image_paths)} captured image(s), wrote {len(page_paths)} JPG page(s).")
